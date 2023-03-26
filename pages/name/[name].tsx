@@ -9,17 +9,18 @@ import { pokeAPI } from '@/api';
 import { Layout } from '../../components/layouts';
 import { Pokemon } from '../../interfaces/pokemon-full';
 
-import { getPokemonInfo , localStorageFavorites } from '../../utils';
+import { getPokemonInfo, localStorageFavorites } from '../../utils';
+import { PokemonListResponse } from '../../interfaces/pokemon-list';
 
 interface Props {
   pokemon: Pokemon;
 }
  
 interface Params extends ParsedUrlQuery{
-  id: string;
+  name: string;
 }
  
-const PokemonPage: NextPage<Props> = ({ pokemon }) => {
+const PokemonByName: NextPage<Props> = ({ pokemon }) => {
 
   const [ isInFavorites, setIsInFavorites ] = useState( false );
   
@@ -117,25 +118,28 @@ const PokemonPage: NextPage<Props> = ({ pokemon }) => {
 };
  
 export const getStaticPaths: GetStaticPaths<Params> = async () => {
-  const paths = [...Array(151)].map((_, index) => ({
-    params: { id: `${index + 1}` },
-  }));
+  
+  const { data } = await pokeAPI.get<PokemonListResponse>('/pokemon?limit=151')
  
+  const pokemonNames: string[] = data.results.map( pokemon => pokemon.name );
+
   return {
-    paths,
+    paths: pokemonNames.map( name => ({
+        params: { name }
+    })),
     fallback: false,
   };
 };
  
 export const getStaticProps: GetStaticProps = async ({ params }) => {
  
-  const { id } = params as { id: string };
+  const { name } = params as { name: string };
  
   return {
     props: {
-      pokemon: await getPokemonInfo( id )
+        pokemon: await getPokemonInfo( name )
     },
   };
 };
  
-export default PokemonPage;
+export default PokemonByName;
