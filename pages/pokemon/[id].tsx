@@ -10,6 +10,7 @@ import { Layout } from '../../components/layouts';
 import { Pokemon } from '../../interfaces/pokemon-full';
 
 import { getPokemonInfo , localStorageFavorites } from '../../utils';
+import { redirect } from 'next/dist/server/api-utils';
 
 interface Props {
   pokemon: Pokemon;
@@ -117,24 +118,36 @@ const PokemonPage: NextPage<Props> = ({ pokemon }) => {
 };
  
 export const getStaticPaths: GetStaticPaths<Params> = async () => {
-  const paths = [...Array(151)].map((_, index) => ({
+  const paths = [...Array(151)].map(( _ , index) => ({
     params: { id: `${index + 1}` },
   }));
  
   return {
     paths,
-    fallback: false,
+    fallback: 'blocking',
   };
 };
  
 export const getStaticProps: GetStaticProps = async ({ params }) => {
  
   const { id } = params as { id: string };
+
+  const pokemonInfo = await getPokemonInfo( id );
+
+  if( !pokemonInfo ) {
+    return {
+      redirect: {
+        destination: '/',
+        permanent: false
+      }
+    }
+  }
  
   return {
     props: {
       pokemon: await getPokemonInfo( id )
     },
+    revalidate: 86400,
   };
 };
  
